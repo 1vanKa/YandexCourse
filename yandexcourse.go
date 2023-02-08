@@ -2,43 +2,72 @@ package main
 
 import (
 	"fmt"
-	"time"
+	"io"
+	"log"
+	"os"
 )
 
 func main() {
-	sw := Stopwatch{}
-	sw.Start()
-
-	time.Sleep(1 * time.Second)
-	sw.SaveSplit()
-
-	time.Sleep(500 * time.Millisecond)
-	sw.SaveSplit()
-
-	time.Sleep(300 * time.Millisecond)
-	sw.SaveSplit()
-
-	fmt.Println(sw.GetResults())
+	logger := NewLogExtended(os.Stderr, "Logger:")
+	logger.SetLogLevel(LogLevelWarning)
+	logger.Infoln("Не должно напечататься")
+	logger.Warnln("Hello")
+	logger.Errorln("World")
+	logger.Println("Debug")
 }
 
-type Stopwatch struct {
-	start  time.Time
-	splits []time.Time
+type LogLevel int
+
+const (
+	LogLevelError LogLevel = iota
+	LogLevelWarning
+	LogLevelInfo
+)
+
+type LogExtended struct {
+	*log.Logger
+	logLevel LogLevel
 }
 
-func (sw *Stopwatch) Start() {
-	sw.start = time.Now()
-	sw.splits = make([]time.Time, 0, 10)
-}
-
-func (sw *Stopwatch) SaveSplit() {
-	sw.splits = append(sw.splits, time.Now())
-}
-
-func (sw *Stopwatch) GetResults() []time.Duration {
-	durations := make([]time.Duration, len(sw.splits))
-	for i, v := range sw.splits {
-		durations[i] = v.Sub(sw.start)
+func NewLogExtended(out io.Writer, prefix string) (l *LogExtended) {
+	l = &LogExtended{
+		Logger:   log.New(out, prefix, log.LstdFlags),
+		logLevel: LogLevelInfo,
 	}
-	return durations
+	return
+}
+
+func (l LogLevel) isValid() bool {
+	switch l {
+	case LogLevelError, LogLevelWarning, LogLevelInfo:
+		return true
+	default:
+		return false
+	}
+}
+
+func (l *LogExtended) SetLogLevel(lvl LogLevel) error {
+	if !lvl.isValid() {
+		return fmt.Errorf("not valid error: %d", lvl)
+	}
+	l.logLevel = lvl
+	return nil
+}
+
+func (l *LogExtended) Infoln(msg string) {
+	l.println(LogLevelInfo, "INFO ", msg)
+}
+
+func (l *LogExtended) Warnln(msg string) {
+	l.println(LogLevelWarning, "WARN ", msg)
+}
+
+func (l *LogExtended) Errorln(msg string) {
+	l.println(LogLevelError, "ERR ", msg)
+}
+
+func (l *LogExtended) println(logLvl LogLevel, prefix string, msg string) {
+	if l.logLevel >= logLvl {
+		l.Logger.Println(prefix + msg)
+	}
 }
