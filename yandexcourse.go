@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"time"
+	"yandexcourse/hashbyte"
 	"yandexcourse/randbyte"
 )
 
@@ -18,4 +19,7 @@ func main() {
 		fmt.Printf("Generate bytes: %v size(%d)\n", buf, n)
 	}
 
+	hasher := hashbyte.New(0)
+	hasher.Write(buf)
+	fmt.Printf("Hash: %v \n", hasher.Hash())
 }
