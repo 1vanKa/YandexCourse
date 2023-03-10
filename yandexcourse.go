@@ -1,76 +1,44 @@
 package main
 
 import (
-	"bufio"
-	"errors"
 	"fmt"
-	"os"
-	"regexp"
-	"strings"
 )
 
-// 1) вставьте определение типа для []error
-// 2) определите метод Error для вашего типа, который будет выводить
-//    все ошибки слайса
-// 3) реализуйте функцию MyCheck
-//
+type input struct {
+	a       int
+	b       int
+	counter int
+}
+
+// 1) добавьте функцию f
+// 2) добавьте функцию test(a, b, counter int) (err error),
+// которая преобразует панику в ошибку
 // ...
 
-type errorslice struct {
-	errs []error
+func f(a, b, i int) {
+	if i == 0 {
+		panic("counter equals 0")
+	}
+	f(b, a/b, i-1)
 }
 
-func (err errorslice) Error() string {
-	sb := strings.Builder{}
-	for _, e := range err.errs {
-		sb.WriteString(e.Error())
-		sb.WriteString("; ")
-	}
-	return strings.TrimRight(sb.String(), "; ")
-}
-
-var isNumeric func(string) bool = regexp.MustCompile(`\d`).MatchString
-
-var (
-	ErrFoundNumbers = errors.New("found numbers")
-	ErrLineTooLong  = errors.New("line is too long")
-	ErrNoTwoSpaces  = errors.New("no two spaces")
-)
-
-func MyCheck(input string) error {
-	err := errorslice{}
-	if isNumeric(input) {
-		err.errs = append(err.errs, ErrFoundNumbers)
-	}
-	if len(input) >= 20 {
-		err.errs = append(err.errs, ErrLineTooLong)
-	}
-	if strings.Count(input, " ") != 2 {
-		err.errs = append(err.errs, ErrNoTwoSpaces)
-	}
-	if len(err.errs) > 0 {
-		return err
-	}
+func test(a, b, counter int) (err error) {
+	defer func() {
+		if p := recover(); p != nil {
+			err = fmt.Errorf("%v", p)
+		}
+	}()
+	f(a, b, counter)
 	return nil
 }
 
 func main() {
-	for {
-		fmt.Printf("Укажите строку (q для выхода): ")
-		reader := bufio.NewReader(os.Stdin)
-		ret, err := reader.ReadString('\n')
-		if err != nil {
-			fmt.Println(err)
-			continue
-		}
-		ret = strings.TrimRight(ret, "\n")
-		if ret == `q` {
-			break
-		}
-		if err = MyCheck(ret); err != nil {
-			fmt.Println(err)
-		} else {
-			fmt.Println(`Строка прошла проверку`)
-		}
+	for _, pars := range []input{
+		{10, 5, 3},
+		{100, 7, 10},
+		{1, 1, 1000},
+	} {
+		fmt.Printf("(%d, %d, %d) => %v\r\n", pars.a, pars.b, pars.counter,
+			test(pars.a, pars.b, pars.counter))
 	}
 }
